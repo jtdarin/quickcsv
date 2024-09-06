@@ -93,6 +93,19 @@ ui <- navbarPage(
       column(12, align = "center",
              textOutput("text0")
       )
+    ),
+    
+    # Github link
+    fluidRow(
+      column(12, align = "center",
+             tags$div(style = "text-align: center;",
+                      tags$a(
+                        href = "https://github.com/jtdarin/quickcsv",  
+                        "Github",            
+                        target = "_blank"                   
+                      )
+             )
+      )
     )
   )
 )
@@ -103,7 +116,11 @@ server <- function(input, output) {
   
   # text 
   output$text0 <- renderText("Developed by J.T. Darin.")
-  output$text1 <- renderText("Directions here")
+  output$text1 <- renderText("This tool allows you to easily join two files into one dataset using an inner-join. 
+                             An inner-join keeps values in both the left and right files which have a matching key in both files.
+                             The key on which to join the two files can be selected after uploading your left and right files.
+                             The input buttons allow for multiple file uploads, which is useful if you have identically formatted files
+                             with different data that you would like to combine.")
   
   # render left files table (show file name, size, and type)
   output$leftfiles <- renderTable({
