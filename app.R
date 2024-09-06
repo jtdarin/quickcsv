@@ -7,59 +7,93 @@ ui <- navbarPage(
   tabPanel(
     title = "Construct New Dataset",
     
-    # (Instructions text here)
-    textOutput("text1"),
+    # Instructions text
+    fluidRow(
+      column(12, textOutput("text1"))
+    ),
     
     # Horizontal line
     tags$hr(),
     
-    # Upload button (left)
-    fileInput(
-      inputId = "left",
-      label = "Upload Left Data CSV File(s)",
-      multiple = FALSE,
-      accept = c(
-        "text/csv",
-        "text/comma-separated-values,text/plain",
-        ".csv"
+    # Create two columns layout for left and right file inputs
+    fluidRow(
+      # Left side
+      column(6,
+             h3("Left Data Input"),
+             fileInput(
+               inputId = "left",
+               label = "Upload Left Data CSV File(s)",
+               multiple = TRUE,
+               accept = c(
+                 "text/csv",
+                 "text/comma-separated-values,text/plain",
+                 ".csv"
+               )
+             ),
+             # Table to show uploaded left file details
+             tableOutput("leftfiles"),
+             
+             # Preview of the first uploaded left CSV file
+             tableOutput("leftpreview")
+      ),
+      
+      # Right side
+      column(6,
+             h3("Right Data Input"),
+             fileInput(
+               inputId = "right",
+               label = "Upload Right Data CSV File(s)",
+               multiple = TRUE,
+               accept = c(
+                 "text/csv",
+                 "text/comma-separated-values,text/plain",
+                 ".csv"
+               )
+             ),
+             # Table to show uploaded right file details
+             tableOutput("rightfiles"),
+             
+             # Preview of the first uploaded right CSV file
+             tableOutput("rightpreview")
       )
     ),
     
-    # Table to show uploaded files
-    tableOutput("leftfiles"),
+    # Horizontal line
+    tags$hr(),
     
-    # Upload button (right)
-    fileInput(
-      inputId = "right",
-      label = "Upload Right Data CSV File(s)",
-      multiple = FALSE,
-      accept = c(
-        "text/csv",
-        "text/comma-separated-values,text/plain",
-        ".csv"
+    # Center the selectInput for columns to left-join on
+    fluidRow(
+      column(12, align = "center",
+             tags$div(style = "text-align: center;",
+                      uiOutput("column_selector")
+             )
       )
     ),
     
-    # Table to show uploaded files
-    tableOutput("rightfiles"),
-    
-    # selectInput for columns to left-join on
-    uiOutput("column_selector"),
-    
     # Horizontal line
     tags$hr(),
     
-    # Download button
-    downloadButton(
-      outputId = "download",
-      label = "Download Dataset"
+    # Centered download button
+    fluidRow(
+      column(12, align = "center",
+             tags$div(style = "text-align: center;",
+                      downloadButton(
+                        outputId = "download",
+                        label = "Download Dataset"
+                      )
+             )
+      )
     ),
     
     # Horizontal line
     tags$hr(),
     
-    # credit
-    textOutput("text0"),
+    # credit at the bottom
+    fluidRow(
+      column(12, align = "center",
+             textOutput("text0")
+      )
+    )
   )
 )
 
@@ -68,14 +102,52 @@ server <- function(input, output) {
   options(shiny.maxRequestSize = 100 * 1024 ^ 2)
   
   # text 
-  output$text0 = renderText("Developed by J.T. Darin.")
-  output$text1 = renderText("Directions here")
+  output$text0 <- renderText("Developed by J.T. Darin.")
+  output$text1 <- renderText("Directions here")
   
-  # render tables
-  output$leftfiles = renderTable(input$left)
-  output$rightfiles = renderTable(input$right)
+  # render left files table (show file name, size, and type)
+  output$leftfiles <- renderTable({
+    req(input$left)
+    data.frame(
+      Name = input$left$name,
+      Size = input$left$size,
+      Type = input$left$type
+    )
+  })
   
-  ### reactives
+  # render right files table (show file name, size, and type)
+  output$rightfiles <- renderTable({
+    req(input$right)
+    data.frame(
+      Name = input$right$name,
+      Size = input$right$size,
+      Type = input$right$type
+    )
+  })
+  
+  ### CSV Preview logic ###
+  
+  # Preview the first left CSV file (first few rows)
+  output$leftpreview <- renderTable({
+    req(input$left)
+    # Read the first file only
+    leftFilePath <- input$left$datapath[1]
+    # Preview the first few rows
+    read_csv(leftFilePath) %>%
+      head(10)
+  })
+  
+  # Preview the first right CSV file (first few rows)
+  output$rightpreview <- renderTable({
+    req(input$right)
+    # Read the first file only
+    rightFilePath <- input$right$datapath[1]
+    # Preview the first few rows
+    read_csv(rightFilePath) %>%
+      head(10)
+  })
+  
+  ### reactives ###
   
   # bind left dataset
   leftData <- reactive({
@@ -99,7 +171,7 @@ server <- function(input, output) {
     req(columnChoice())  # Ensure columnChoice is available
     selectInput(
       inputId = "column",
-      label = "Select column to perform left-join",
+      label = "Select column to perform inner-join",
       choices = columnChoice(),
       multiple = FALSE
     )
@@ -112,7 +184,7 @@ server <- function(input, output) {
     
     leftData() |>
       # join by column selected
-      left_join(leftData(), by = input$column) |>
+      inner_join(rightData(), by = input$column) |>
       # remove columns containing only NA values
       select_if(~sum(!is.na(.)) > 0)
   })
