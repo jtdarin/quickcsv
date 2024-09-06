@@ -7,7 +7,7 @@ ui <- navbarPage(
   tabPanel(
     title = "Construct New Dataset",
     
-    # (Instructions text here)
+    # Instructions text
     textOutput("text1"),
     
     # Horizontal line
@@ -17,7 +17,7 @@ ui <- navbarPage(
     fileInput(
       inputId = "left",
       label = "Upload Left Data CSV File(s)",
-      multiple = FALSE,
+      multiple = TRUE,
       accept = c(
         "text/csv",
         "text/comma-separated-values,text/plain",
@@ -25,14 +25,17 @@ ui <- navbarPage(
       )
     ),
     
-    # Table to show uploaded files
+    # Table to show uploaded left file details
     tableOutput("leftfiles"),
+    
+    # Preview of the first uploaded left CSV file
+    tableOutput("leftpreview"),
     
     # Upload button (right)
     fileInput(
       inputId = "right",
       label = "Upload Right Data CSV File(s)",
-      multiple = FALSE,
+      multiple = TRUE,
       accept = c(
         "text/csv",
         "text/comma-separated-values,text/plain",
@@ -40,8 +43,11 @@ ui <- navbarPage(
       )
     ),
     
-    # Table to show uploaded files
+    # Table to show uploaded right file details
     tableOutput("rightfiles"),
+    
+    # Preview of the first uploaded right CSV file
+    tableOutput("rightpreview"),
     
     # selectInput for columns to left-join on
     uiOutput("column_selector"),
@@ -68,14 +74,52 @@ server <- function(input, output) {
   options(shiny.maxRequestSize = 100 * 1024 ^ 2)
   
   # text 
-  output$text0 = renderText("Developed by J.T. Darin.")
-  output$text1 = renderText("Directions here")
+  output$text0 <- renderText("Developed by J.T. Darin.")
+  output$text1 <- renderText("Directions here")
   
-  # render tables
-  output$leftfiles = renderTable(input$left)
-  output$rightfiles = renderTable(input$right)
+  # render left files table (show file name, size, and type)
+  output$leftfiles <- renderTable({
+    req(input$left)
+    data.frame(
+      Name = input$left$name,
+      Size = input$left$size,
+      Type = input$left$type
+    )
+  })
   
-  ### reactives
+  # render right files table (show file name, size, and type)
+  output$rightfiles <- renderTable({
+    req(input$right)
+    data.frame(
+      Name = input$right$name,
+      Size = input$right$size,
+      Type = input$right$type
+    )
+  })
+  
+  ### CSV Preview logic ###
+  
+  # Preview the first left CSV file (first few rows)
+  output$leftpreview <- renderTable({
+    req(input$left)
+    # Read the first file only
+    leftFilePath <- input$left$datapath[1]
+    # Preview the first few rows
+    read_csv(leftFilePath) %>%
+      head(10)
+  })
+  
+  # Preview the first right CSV file (first few rows)
+  output$rightpreview <- renderTable({
+    req(input$right)
+    # Read the first file only
+    rightFilePath <- input$right$datapath[1]
+    # Preview the first few rows
+    read_csv(rightFilePath) %>%
+      head(10)
+  })
+  
+  ### reactives ###
   
   # bind left dataset
   leftData <- reactive({
@@ -129,3 +173,4 @@ server <- function(input, output) {
 }
 
 shinyApp(ui = ui, server = server)
+
