@@ -22,10 +22,10 @@ ui <- navbarPage(
     fluidRow(
       # Left side
       column(6,
-             h3("Left Data Input"),
+             h3("Upload Left CSV File(s)"),
              fileInput(
                inputId = "left",
-               label = "Upload Left Data CSV File(s)",
+               label = "Upload Left Data CSV File(s). If uploading multiple files, select all files at once in the pop-up window.",
                multiple = TRUE,
                accept = c(
                  "text/csv",
@@ -42,10 +42,10 @@ ui <- navbarPage(
       
       # Right side
       column(6,
-             h3("Right Data Input"),
+             h3("Upload Right CSV File(s)"),
              fileInput(
                inputId = "right",
-               label = "Upload Right Data CSV File(s)",
+               label = "If uploading multiple files, select all files at once in the pop-up window.",
                multiple = TRUE,
                accept = c(
                  "text/csv",
