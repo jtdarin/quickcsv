@@ -1,0 +1,13 @@
+name: quickcsv
+title: quickcsv
+username: jtdarin
+account: jtdarin
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 12631542
+bundleId: 9076987
+url: https://jtdarin.shinyapps.io/quickcsv/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: cars2.csv

@@ -1,11 +1,14 @@
 library(tidyverse)
 library(data.table)
 library(shiny)
+library(shinyjs)
 
 ui <- navbarPage(
   title = "Dataset Constructor Tool",
   tabPanel(
     title = "Construct New Dataset",
+    
+    useShinyjs(),
     
     # Instructions text
     fluidRow(
@@ -88,7 +91,7 @@ ui <- navbarPage(
     # Horizontal line
     tags$hr(),
     
-    # credit at the bottom
+    # My Name
     fluidRow(
       column(12, align = "center",
              textOutput("text0")
@@ -151,7 +154,7 @@ server <- function(input, output) {
     leftFilePath <- input$left$datapath[1]
     # Preview the first few rows
     read_csv(leftFilePath) %>%
-      head(10)
+      head(5)
   })
   
   # Preview the first right CSV file (first few rows)
@@ -161,7 +164,7 @@ server <- function(input, output) {
     rightFilePath <- input$right$datapath[1]
     # Preview the first few rows
     read_csv(rightFilePath) %>%
-      head(10)
+      head(5)
   })
   
   ### reactives ###
@@ -185,25 +188,33 @@ server <- function(input, output) {
   })
   
   output$column_selector <- renderUI({
-    req(columnChoice())  # Ensure columnChoice is available
-    selectInput(
-      inputId = "column",
-      label = "Select column to perform inner-join",
-      choices = columnChoice(),
-      multiple = FALSE
-    )
+    req(leftData(), rightData())
+    
+    if (length(columnChoice()) == 0) {
+      showNotification("Error: The left and right files do not have any matching column names.", type = "error", duration = NULL)
+      shinyjs::disable("download")  # Disable the download button
+      return(NULL)
+    } else {
+      shinyjs::enable("download")  # Enable the download button when columns match
+      selectInput(
+        inputId = "column",
+        label = "Select column to perform inner-join",
+        choices = columnChoice(),
+        multiple = FALSE
+      )
+    }
   })
   
   # join datasets together
   fullData <- reactive({
-    # ensure data is available
-    req(leftData(), rightData())
-    
-    leftData() |>
-      # join by column selected
-      inner_join(rightData(), by = input$column) |>
-      # remove columns containing only NA values
-      select_if(~sum(!is.na(.)) > 0)
+    if (length(columnChoice()) == 0) {
+      return(NULL)  # No common columns, return NULL
+    } else {
+      leftData() %>%
+        inner_join(rightData(), by = input$column) %>%
+        # Remove columns containing only NA values
+        select_if(~sum(!is.na(.)) > 0)
+    }
   })
   
   # download handler
@@ -212,6 +223,7 @@ server <- function(input, output) {
       paste0("file_", format(Sys.time(),"%Y-%m-%d %H:%M:%S"), ".csv", sep = "")
     },
     content = function(file) {
+      validate(need(fullData(), "Cannot download the file. Please check your inputs."))
       write.csv(fullData(), file)
     }
   )
